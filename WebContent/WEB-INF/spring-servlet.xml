@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:cache="http://www.springframework.org/schema/cache"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd
+		http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.1.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+		http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache-3.2.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+	<context:annotation-config></context:annotation-config>
+	
+	<context:component-scan
+		base-package="com.miraglo.egas.utils,com.miraglo.egas.rest.controllers,com.miraglo.egas.mvc.controllers,com.mangofactory.swagger.controllers,com.mangofactory.swagger.configuration,com.miraglo.egas.config,com.miraglo.egas.controllers,com.miraglo.security.services,com.miraglo.egas.services.impl,com.miraglo.egas.dao.impl"></context:component-scan>
+
+	<!-- MVC Resources -->
+
+	<mvc:resources location="/static/" mapping="/*.html"
+		order="3" />
+	<mvc:resources location="/static/" mapping="/static/*.html"
+		order="4" />
+	
+	<mvc:resources location="/static/js/" mapping="/js/**" />
+	<mvc:resources location="/static/css/" mapping="/css/**" />
+	<mvc:resources location="/static/images/" mapping="/images/**" />
+	<mvc:resources location="/static/docs/" mapping="/docs/**" />
+	<mvc:resources location="/static/plugins/" mapping="/plugins/**" />
+	<mvc:resources location="/static/fonts/" mapping="/fonts/**" />
+	<mvc:default-servlet-handler />
+	<mvc:annotation-driven
+		content-negotiation-manager="contentNegotiationManager" />
+	<bean id="contentNegotiationManager"
+		class="org.springframework.web.accept.ContentNegotiationManagerFactoryBean">
+		<property name="favorPathExtension" value="false" />
+		<property name="favorParameter" value="false" />
+		<property name="ignoreAcceptHeader" value="false" />
+		<property name="mediaTypes">
+			<value>
+				atom=application/atom+xml
+				html=text/html
+				json=application/json
+				*=*/*
+			</value>
+		</property>
+	</bean>
+	<!-- Use @Transaction annotations for managing transactions -->
+	<tx:annotation-driven transaction-manager="transactionManager" />
+
+	<!-- view resolvers -->
+	<bean id="viewResolver"
+		class="org.springframework.web.servlet.view.UrlBasedViewResolver">
+		<property name="viewClass"
+			value="org.springframework.web.servlet.view.JstlView" />
+		<property name="prefix" value="/WEB-INF/jsp/" />
+		<property name="suffix" value=".jsp" />
+		<property name="order" value="1" />
+	</bean>
+
+	<!-- PropertyConfiguer -->
+	<bean id="propertyConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="location" value="/WEB-INF/config/application.properties"></property>
+
+	</bean>
+	<util:properties id="securityConfig"
+		location="/WEB-INF/config/security.properties"></util:properties>
+
+
+	<!-- DataSource connection -->
+	<bean id="myDataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${jdbc.driverClassName}"></property>
+		<property name="url" value="${jdbc.url}"></property>
+		<property name="username" value="${jdbc.username}"></property>
+		<property name="password" value="${jdbc.password}"></property>
+	</bean>
+
+	<!-- Hibernate SessionFactory -->
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource" ref="myDataSource"></property>
+		<property name="packagesToScan" value="com.miraglo.egas.dm">
+
+		</property>
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">${hibernate.dialect}</prop>
+				<prop key="hibernate.show_sql">${hibernate.show_sql}</prop>
+				<prop key="hibernate.hbm2ddl.auto">${hibernate.hbm2ddl.auto}</prop>
+				<prop key="javax.persistence.validation.mode">${javax.persistence.validation.mode}</prop>
+				<prop key="hibernate.cache.region.factory_class">${hibernate.cache.region.factory_class}</prop>
+				<prop key="hibernate.cache.use_second_level_cache">${hibernate.cache.use_second_level_cache}</prop>
+				<!-- <prop key="net.sf.ehcache.configurationResourceName">${net.sf.ehcache.configurationResourceName}</prop> -->
+
+				<prop key="hibernate.cache.use_query_cache">${hibernate.cache.use_query_cache}</prop>
+			</props>
+		</property>
+	</bean>
+	
+	
+
+
+
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory"></property>
+	</bean>
+
+
+	
+
+	<!-- Spring Security Manager -->
+	<security:http realm="Protected API" use-expressions="true"
+		auto-config="false" create-session="stateless" entry-point-ref="CustomAuthenticationEntryPoint">
+		<security:custom-filter ref="authenticationTokenProcessingFilter"
+			position="BASIC_AUTH_FILTER" />
+
+		<security:intercept-url pattern="authenticate.html" access="permitAll()" />
+		<security:intercept-url pattern="/setup.html"
+			access="permitAll()" />
+		<security:intercept-url pattern="/apidocs/*"
+			access="permitAll()" />
+		<security:intercept-url pattern="/js/*" access="permitAll()" />
+		<security:intercept-url pattern="/static/*" access="permitAll()" />
+		<security:intercept-url pattern="/images/*"
+			access="permitAll()" />
+		<security:intercept-url pattern="/docs/*"
+			access="permitAll()" />
+		<security:intercept-url pattern="/plugins/*"
+			access="permitAll()" />
+		<security:intercept-url pattern="/fonts/*"
+			access="permitAll()" />
+		<security:intercept-url pattern="/**"
+			access="isAuthenticated()" />
+	</security:http>
+
+	<bean id="CustomAuthenticationEntryPoint"
+		class="com.miraglo.security.services.CustomAuthenticationEntryPoint" />
+
+	<!-- Registering custom authenticator -->
+	<bean
+		class="com.miraglo.security.services.AuthenticationTokenProcessingFilter"
+		id="authenticationTokenProcessingFilter">
+		<constructor-arg ref="authenticationManager" />
+	</bean>
+	<!-- Registering custom authenticator -->
+	<security:authentication-manager alias="authenticationManager">
+		<security:authentication-provider
+			user-service-ref="myUserDetailService">
+		</security:authentication-provider>
+	</security:authentication-manager>
+
+
+	<bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<!-- one of the properties available; the maximum file size in bytes -->
+		<property name="maxUploadSize" value="1000000" />
+	</bean>
+<bean id="documentationConfig" class="com.mangofactory.swagger.configuration.DocumentationConfig"/>
+
+</beans>
+
